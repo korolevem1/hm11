@@ -1,0 +1,59 @@
+pipeline {
+  
+  
+  agent any
+
+  
+    stages {
+        
+        
+        stage ('make images for builder and put it tu nexus') {
+            steps {
+                script {
+                    def dockerImage = docker.build("35.226.240.14:8084/korolevem/builder:latest", "/var/lib/jenkins/dockerfiles/builder")
+                    withDockerRegistry(credentialsId: '05205bcc-ac53-438d-8f8e-d38247354fd4', url:  'http://35.226.240.14:8084/') {
+                        dockerImage.push()
+                    }
+                }
+            }
+        }
+        
+        
+        stage ('make war') {
+            agent {
+                docker {
+                   image '35.226.240.14:8084/korolevem/builder:latest'
+                      args '-u root:root -v /var/lib/jenkins/dockerfiles/web/:/tmp/'
+                }
+            }
+            
+            steps {
+                git(url: 'https://github.com/tarekkhoury/mywebapplication.git')
+                sh 'mvn package' 
+                /*sh 'rm -rf /tmp/mywebapplication.war'*/
+                sh 'cp ./target/mywebapplication.war /tmp/ ' 
+            }
+        }
+
+
+        stage ('make images for web and put it tu nexus') {
+            steps {
+                script {
+                    def dockerImage = docker.build("35.226.240.14:8084/korolevem/web:latest", "/var/lib/jenkins/dockerfiles/web")
+                    withDockerRegistry(credentialsId: '05205bcc-ac53-438d-8f8e-d38247354fd4', url:  'http://35.226.240.14:8084/') {
+                        dockerImage.push()
+                    }
+                }
+            }
+        }
+        
+        
+        stage ('public app') {
+            steps {
+                sh 'ssh jenkins@web1 "sudo docker rm -f myweb && sudo  docker pull 35.226.240.14:8084/korolevem/web && sudo docker run -d -p 8080:8080 --name myweb 35.226.240.14:8084/korolevem/web"'
+            }
+        }
+
+
+    }        
+}
