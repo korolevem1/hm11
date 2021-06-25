@@ -36,7 +36,7 @@ pipeline {
         }
 
 
-        stage ('make images for web and put it tu nexus') {
+        stage ('make images for web and put it to nexus') {
             steps {
                 script {
                     def dockerImage = docker.build("35.226.240.14:8084/korolevem/web:latest", "/var/lib/jenkins/dockerfiles/web")
