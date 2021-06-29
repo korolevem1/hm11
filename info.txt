@@ -1,0 +1,43 @@
+на jenkins и web делаем usermod -a -G docker jenkins и systemctl restart jenkins
+
+
+### run this command bellow that put image to local nexus  
+docker build -t builder:latest .
+docker image tag builder:latest 34.136.7.52:8084/builder:latest
+docker push 34.136.7.52:8084/builder:latest
+
+### put to docker hub
+
+docker build -t korolevem/builder .
+docker image tag korolevem/builder korolevem/builder
+docker push korolevem/builder
+
+### special nuance
+in  dockerImage.push we need use 
+ withDockerRegistry(credentialsId: 'df3a4718-d996-43ac-b19d-21d12adc6ebd')
+ for rejestry also for dockerhub
+
+ ### Info from Dmitry
+
+
+Ваше задание посмотрел. Есть замечания:
++ Как я и говорил, Jenkins работает на уже готовой инфраструктуре. Т.е. он не собирает окружения. 
+Представьте, перед каждой сборкой, Jenkinsбудет тратить время на пересборку сборочного окружения. 
+Это не его задача. Для учебных целей такой код (первый этап в Вашем pipeline) будет полезен, 
+для тренировки написания кода, но на боевых системах так делать нельзя. 
+
++ Когда Вы деплоите приложение на прод (stage public app), удобнее использовать docker-compose, 
+чтобы не возиться с удалением и перезапуском старых контейнеров.
+
++ Ну и в образе WEB, Вы используете FROM tomcat:8.5.43-jdk8 и указываете EXPOSE и CMD. 
+Эти инструкции уже есть в базовом образе, они здесь лишние.
+
+========
+docker-compose.yml на web
+
+version: '3.3'
+services:
+  tomcat:
+    image: korolevem/web:latest
+    ports:
+      - '8080:8080'
