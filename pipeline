@@ -5,24 +5,12 @@ pipeline {
 
   
     stages {
-        
-        
-        stage ('make images for builder and put it tu nexus') {
-            steps {
-                script {
-                    def dockerImage = docker.build("34.136.7.52:8084/korolevem/builder:latest", "/var/lib/jenkins/dockerfiles/builder")
-                    withDockerRegistry(credentialsId: '05205bcc-ac53-438d-8f8e-d38247354fd4', url:  'http://34.136.7.52:8084/') {
-                        dockerImage.push()
-                    }
-                }
-            }
-        }
-        
+      
         
         stage ('make war') {
             agent {
                 docker {
-                   image '34.136.7.52:8084/korolevem/builder:latest'
+                   image 'korolevem/builder'
                       args '-u root:root -v /var/lib/jenkins/dockerfiles/web/:/tmp/'
                 }
             }
@@ -39,8 +27,9 @@ pipeline {
         stage ('make images for web and put it to nexus') {
             steps {
                 script {
-                    def dockerImage = docker.build("34.136.7.52:8084/korolevem/web:latest", "/var/lib/jenkins/dockerfiles/web")
-                    withDockerRegistry(credentialsId: '05205bcc-ac53-438d-8f8e-d38247354fd4', url:  'http://34.136.7.52:8084/') {
+                    def dockerImage = docker.build("korolevem/web", "/var/lib/jenkins/dockerfiles/web")
+                    withDockerRegistry(credentialsId: 'df3a4718-d996-43ac-b19d-21d12adc6ebd')
+                    {
                         dockerImage.push()
                     }
                 }
@@ -50,7 +39,7 @@ pipeline {
         
         stage ('public app') {
             steps {
-                sh 'ssh jenkins@web1 "sudo docker rm -f myweb && sudo  docker pull 34.136.7.52:8084/korolevem/web && sudo docker run -d -p 8080:8080 --name myweb 34.136.7.52:8084/korolevem/web"'
+                sh 'ssh jenkins@10.128.0.3 "sudo docker-compose up -d"'
             }
         }
 
